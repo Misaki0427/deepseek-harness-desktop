@@ -98,9 +98,11 @@ npm run release:major    # 特大变动：2.0.3 → 3.0.0
 | 2.0.0 | 内置 Node 运行时架构 |
 | 1.2.0 / 1.0.0 | 早期版本 |
 
-## 🐋 鲸鱼娘皮肤（可选第三方插件）
+## 🐋 鲸鱼娘皮肤（内置，开盒即用）
 
-界面截图中的"深海女仆工坊"皮肤来自第三方开源项目 [Small-tailqwq/dsh-deep-whale](https://github.com/Small-tailqwq/dsh-deep-whale)，**不包含在本安装包内**，如需安装：
+"深海女仆工坊"皮肤来自第三方开源项目 [Small-tailqwq/dsh-deep-whale](https://github.com/Small-tailqwq/dsh-deep-whale)。**自 v2.0.8 起皮肤已内置进安装包**：首次启动时自动部署到用户配置，无需安装 pnpm、无需任何手动操作（若用户自定义过 dsh 配置则自动跳过，尊重用户设置）。
+
+源码构建时如需包含皮肤，把 `maid-atelier` 目录复制到 `harness-runtime\node_modules\@dsh-external\dsh-client-ui-skin-maid-atelier` 即可；手动安装方式：
 
 ```powershell
 # 1. 克隆皮肤仓库

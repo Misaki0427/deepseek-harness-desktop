@@ -13,6 +13,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const os = require('os');
 
 
 /* =========================================================
@@ -1211,6 +1212,174 @@ function notifyRestartFailed() {
 
 
 /* =========================================================
+ * 内置鲸鱼娘皮肤：首次启动自动部署
+ * ========================================================= */
+
+const SKIN_BUNDLE_NAME =
+    '@dsh-external/dsh-client-ui-skin-maid-atelier';
+
+const SKIN_BUNDLE_DIR = path.join(
+    HARNESS_DIR,
+    'node_modules',
+    SKIN_BUNDLE_NAME
+);
+
+/**
+ * 安装包内置了鲸鱼娘皮肤（resources\harness\node_modules 下）。
+ * 首次启动（或用户从未改过默认配置）时，自动把它注册进
+ * 用户的 dsh 配置（~/.dsh/profiles/web），无需安装 pnpm。
+ */
+function ensureSkinProfile() {
+
+    if (!fs.existsSync(SKIN_BUNDLE_DIR)) {
+
+        console.log(
+            '[SKIN] 运行时未包含皮肤包，跳过'
+        );
+
+        return;
+    }
+
+    const profileDir = path.join(
+        os.homedir(),
+        '.dsh',
+        'profiles',
+        'web'
+    );
+
+    const manifestPath = path.join(
+        profileDir,
+        'package.json'
+    );
+
+    const DEFAULT_BUNDLES = [
+        '@deepseek-ai/dsh-base',
+        '@deepseek-ai/dsh-web-app'
+    ];
+
+    let manifest;
+
+    if (fs.existsSync(manifestPath)) {
+
+        try {
+
+            manifest = JSON.parse(
+                fs.readFileSync(manifestPath, 'utf8')
+            );
+
+        } catch {
+
+            console.warn(
+                '[SKIN] 无法读取 profile 配置，跳过皮肤部署'
+            );
+
+            return;
+        }
+
+        const bundles =
+            manifest.dsh?.profile?.bundles;
+
+        if (!Array.isArray(bundles)) {
+            return;
+        }
+
+        if (bundles.includes(SKIN_BUNDLE_NAME)) {
+
+            // 已经启用，无需处理
+            return;
+        }
+
+        /**
+         * 仅当用户从未改动默认配置时才自动补上皮肤，
+         * 尊重用户的自定义配置。
+         */
+        const isDefault =
+            bundles.length === DEFAULT_BUNDLES.length &&
+            DEFAULT_BUNDLES.every(
+                (name) => bundles.includes(name)
+            );
+
+        if (!isDefault) {
+
+            console.log(
+                '[SKIN] 用户自定义了配置，不自动修改'
+            );
+
+            return;
+        }
+
+        bundles.push(SKIN_BUNDLE_NAME);
+
+    } else {
+
+        fs.mkdirSync(
+            profileDir,
+            {
+                recursive: true
+            }
+        );
+
+        manifest = {
+            name: 'dsh-profile-web',
+            private: true,
+            dependencies: {},
+            dsh: {
+                profile: {
+                    bundles: [
+                        ...DEFAULT_BUNDLES,
+                        SKIN_BUNDLE_NAME
+                    ]
+                }
+            }
+        };
+
+        /**
+         * 补全 profile 模板文件，与 dsh 默认初始化一致。
+         */
+        fs.writeFileSync(
+            path.join(profileDir, 'cordis.patch.yml'),
+            [
+                '# Your patch layer for this dsh profile, applied after every bundle layer:',
+                '# a top-level YAML array of loader patch entries.',
+                '[]',
+                ''
+            ].join('\n')
+        );
+
+        fs.writeFileSync(
+            path.join(profileDir, 'cordis.yml'),
+            [
+                '# dsh profile root — an empty entry list.',
+                '[]',
+                ''
+            ].join('\n')
+        );
+
+        fs.writeFileSync(
+            path.join(profileDir, 'pnpm-workspace.yaml'),
+            [
+                'packages:',
+                '  - .',
+                '',
+                'nodeLinker: hoisted',
+                'autoInstallPeers: false',
+                ''
+            ].join('\n')
+        );
+    }
+
+    fs.writeFileSync(
+        manifestPath,
+        JSON.stringify(manifest, null, 2)
+    );
+
+    console.log(
+        '[SKIN] 已启用内置鲸鱼娘皮肤（深海女仆工坊）'
+    );
+}
+
+
+/* =========================================================
  * 打开 Harness
  * ========================================================= */
 
@@ -1974,6 +2143,12 @@ async function bootstrap() {
      * 服务就绪后再切换到 Harness UI。
      */
     createWindow();
+
+
+    /**
+     * 首次启动自动部署内置鲸鱼娘皮肤。
+     */
+    ensureSkinProfile();
 
 
     const running =

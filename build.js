@@ -318,6 +318,17 @@ async function prepareHarnessRuntime() {
         "✅ watchdog.js 检查通过"
     );
 
+    const skinPath = path.join(
+        buildHarnessDir,
+        "node_modules",
+        "@dsh-external",
+        "dsh-client-ui-skin-maid-atelier"
+    );
+
+    console.log(
+        `✅ 鲸鱼娘皮肤：${fs.existsSync(skinPath) ? "已包含（开盒即用）" : "未包含"}`
+    );
+
     console.log("");
 
     return {
