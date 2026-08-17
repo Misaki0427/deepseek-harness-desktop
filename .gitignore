@@ -1,0 +1,15 @@
+# 依赖
+node_modules/
+
+# 构建产物（安装包请发布到 GitHub Releases）
+dist/
+harness-build/
+
+# 内置运行时（体积大，按 README 步骤重建）
+harness-runtime/node_modules/
+harness-runtime/node.exe
+
+# 日志与临时文件
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,68 @@
+{
+  "name": "deepseek-harness-desktop",
+  "version": "2.0.6",
+  "description": "DeepSeek Harness Desktop Manager",
+  "main": "main.js",
+  "author": "Misaki",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "build": "node build.js",
+    "release": "npm version minor --no-git-tag-version && npm run build",
+    "release:patch": "npm version patch --no-git-tag-version && npm run build",
+    "release:minor": "npm version minor --no-git-tag-version && npm run build",
+    "release:major": "npm version major --no-git-tag-version && npm run build"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.deepseek.harness.desktop",
+    "productName": "DeepSeek Harness",
+    "artifactName": "DeepSeek-Harness-Desktop-${version}-Setup.${ext}",
+    "electronDist": "node_modules/electron/dist",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "theme-bg.png",
+      "theme-emblem.png",
+      "tray.png",
+      "icon.ico",
+      "package.json"
+    ],
+    "asar": true,
+    "compression": "store",
+    "removePackageScripts": true,
+    "npmRebuild": false,
+    "win": {
+      "icon": "icon.ico",
+      "signExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "executableName": "DeepSeek-Harness",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DeepSeek Harness",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "allowElevation": true,
+      "installerIcon": "installer-icon.ico",
+      "uninstallerIcon": "installer-icon.ico"
+    }
+  }
+}
