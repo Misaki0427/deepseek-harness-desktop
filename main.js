@@ -1515,7 +1515,8 @@ function createWindow() {
 
             minHeight: 700,
 
-            title: 'DeepSeek Harness',
+            title:
+                `DeepSeek Harness Desktop v${app.getVersion()}`,
 
             backgroundColor: '#f5f7fa',
 
@@ -1548,6 +1549,19 @@ function createWindow() {
 
     console.log(
         '[WINDOW] BrowserWindow 创建完成'
+    );
+
+
+    /**
+     * 固定窗口标题：
+     * 阻止 Harness 页面改写窗口标题，
+     * 始终显示 DeepSeek Harness Desktop v<版本号>。
+     */
+    mainWindow.on(
+        'page-title-updated',
+        (event) => {
+            event.preventDefault();
+        }
     );
 
 

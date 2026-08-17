@@ -98,6 +98,29 @@ npm run release:major    # 特大变动：2.0.3 → 3.0.0
 | 2.0.0 | 内置 Node 运行时架构 |
 | 1.2.0 / 1.0.0 | 早期版本 |
 
+## 🐋 鲸鱼娘皮肤（可选第三方插件）
+
+界面截图中的"深海女仆工坊"皮肤来自第三方开源项目 [Small-tailqwq/dsh-deep-whale](https://github.com/Small-tailqwq/dsh-deep-whale)，**不包含在本安装包内**，如需安装：
+
+```powershell
+# 1. 克隆皮肤仓库
+git clone https://github.com/Small-tailqwq/dsh-deep-whale
+
+# 2. 安装皮肤子包（dsh 不在 PATH 时用内置运行时完整路径）
+& "harness-runtime\node.exe" "harness-runtime\node_modules\@deepseek-ai\dsh\lib\bin.js" plugin --profile web add <克隆目录>\maid-atelier
+
+# 3. 重启 Harness 生效
+```
+
+**来源与许可**：
+
+| 项目 | 说明 |
+|---|---|
+| 皮肤项目 | [dsh-deep-whale](https://github.com/Small-tailqwq/dsh-deep-whale) · 作者 Small-tailqwq · **CC BY-NC-SA 4.0**（署名-非商业-相同方式共享） |
+| 角色原画 | 上善（[Pixiv](https://www.pixiv.net/users/62155430) · [Bilibili](https://b23.tv/8h5L4xz)） |
+| 二次设计 | ZipZipPipe（[Pixiv](https://www.pixiv.net/users/18604994) · [Bilibili](https://b23.tv/Pnw6nG8)） |
+| 皮肤脚手架 | [zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) |
+
 ## 📄 License
 
 [MIT](LICENSE)
