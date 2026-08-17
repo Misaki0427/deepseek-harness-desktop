@@ -9,6 +9,9 @@ harness-build/
 harness-runtime/node_modules/
 harness-runtime/node.exe
 
+# 本地工具（GitHub 上传包视图，本身不上传）
+github-package/
+
 # 日志与临时文件
 *.log
 .DS_Store
