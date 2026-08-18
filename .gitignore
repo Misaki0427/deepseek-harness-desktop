@@ -7,6 +7,7 @@ harness-build/
 
 # 内置运行时（体积大，按 README 步骤重建）
 harness-runtime/node_modules/
+harness-runtime/dsh-service.exe
 harness-runtime/node.exe
 
 # 本地工具（GitHub 上传包视图，本身不上传）

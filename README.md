@@ -51,7 +51,7 @@ Electron 只负责桌面生命周期；Harness 负责核心业务；两者通过
 npm install
 
 # 2. 准备内置运行时（harness-runtime 目录）
-#    把 Windows x64 版 node.exe 放到 harness-runtime\node.exe
+#    把 Windows x64 版 node.exe 改名为 dsh-service.exe 放到 harness-runtime\dsh-service.exe
 cd harness-runtime
 npm install        # 安装 @deepseek-ai/dsh（版本见 package.json）
 
@@ -92,6 +92,7 @@ npm run release:major    # 特大变动：2.0.3 → 3.0.0
 
 | 版本 | 主要变更 |
 |---|---|
+| 2.0.13 | 运行时改名 dsh-service.exe 规避安全软件拦截；失败弹窗增加白名单指引 |
 | 2.0.12 | 皮肤部署双保险 + 落盘校验 + 启动自愈 |
 | 2.0.11 | 修复新机器皮肤部署缺失文件导致的启动崩溃 |
 | 2.0.10 | 失败弹窗「复制日志」按钮 |

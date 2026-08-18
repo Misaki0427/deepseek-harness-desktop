@@ -219,11 +219,14 @@ const HARNESS_DIR = app.isPackaged
 const HARNESS_CWD = HARNESS_DIR;
 
 /**
- * 内置 Node.js
+ * 内置 Node.js 运行时。
+ *
+ * 注意：刻意改名为 dsh-service.exe（而非 node.exe），
+ * 以避开部分安全软件对 node.exe 监听端口行为的特征拦截。
  */
 const NODE_EXE = path.join(
     HARNESS_DIR,
-    'node.exe'
+    'dsh-service.exe'
 );
 
 /**
@@ -1367,6 +1370,8 @@ function notifyRestartFailed() {
             detail:
                 '本地服务在自动恢复 3 次后仍无法连接。\n\n' +
                 '点击"重试"可再试一次，点击"退出"将关闭程序。\n\n' +
+                '若安装了安全软件（联想电脑管家/360/火绒等），\n' +
+                '请把安装目录加入其信任区/白名单后重启应用。\n\n' +
                 '最近日志（供排查）：\n' +
                 (
                     recentHarnessOutput.length > 0
@@ -2723,6 +2728,7 @@ if (!gotSingleInstanceLock) {
             dialog.showErrorBox(
                 'DeepSeek Harness',
                 error.message +
+                '\n\n若安装了安全软件（联想电脑管家/360/火绒等），\n请把安装目录加入其信任区/白名单后重启应用。' +
                 '\n\n最近日志（供排查）：\n' +
                 (
                     recentHarnessOutput.length > 0

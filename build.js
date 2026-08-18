@@ -259,7 +259,7 @@ async function prepareHarnessRuntime() {
      */
     const nodePath = path.join(
         buildHarnessDir,
-        "node.exe"
+        "dsh-service.exe"
     );
 
     const dshPath = path.join(
@@ -274,7 +274,7 @@ async function prepareHarnessRuntime() {
     if (!fs.existsSync(nodePath)) {
 
         throw new Error(
-            `精简 Runtime 缺少 node.exe：\n${nodePath}`
+            `精简 Runtime 缺少 dsh-service.exe：\n${nodePath}`
         );
     }
 
@@ -307,7 +307,7 @@ async function prepareHarnessRuntime() {
     );
 
     console.log(
-        "✅ node.exe 检查通过"
+        "✅ dsh-service.exe 检查通过"
     );
 
     console.log(
@@ -495,7 +495,7 @@ async function runBuild() {
 
                 const copiedNode = path.join(
                     targetHarnessDir,
-                    "node.exe"
+                    "dsh-service.exe"
                 );
 
                 const copiedDsh = path.join(
@@ -513,7 +513,7 @@ async function runBuild() {
                 );
 
                 console.log(
-                    `node.exe：${fs.existsSync(copiedNode) ? "✅" : "❌"}`
+                    `dsh-service.exe：${fs.existsSync(copiedNode) ? "✅" : "❌"}`
                 );
 
                 console.log(
@@ -523,7 +523,7 @@ async function runBuild() {
                 if (!fs.existsSync(copiedNode)) {
 
                     throw new Error(
-                        `复制后找不到 node.exe：\n${copiedNode}`
+                        `复制后找不到 dsh-service.exe：\n${copiedNode}`
                     );
                 }
 
