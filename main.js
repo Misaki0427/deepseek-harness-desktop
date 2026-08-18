@@ -1,6 +1,7 @@
 const {
     app,
     BrowserWindow,
+    clipboard,
     dialog,
     shell,
     session,
@@ -151,6 +152,48 @@ function recordHarnessOutput(text) {
 function getLogFilePath() {
 
     return logFilePath || '(日志未初始化)';
+}
+
+/**
+ * 把最近日志 + 日志文件尾部复制到剪贴板，
+ * 方便用户直接粘贴到聊天里发给开发者排查。
+ */
+function copyLogsToClipboard() {
+
+    try {
+
+        let fileTail = '';
+
+        if (
+            logFilePath &&
+            fs.existsSync(logFilePath)
+        ) {
+
+            const data = fs.readFileSync(
+                logFilePath,
+                'utf8'
+            );
+
+            fileTail = data.slice(-20000);
+        }
+
+        clipboard.writeText(
+            '【DeepSeek Harness 日志】\n' +
+            '最近输出：\n' +
+            (
+                recentHarnessOutput.length > 0
+                    ? recentHarnessOutput.slice(-10).join('\n')
+                    : '（无）'
+            ) +
+            '\n\n日志文件尾部：\n' +
+            (fileTail || '（无日志文件）')
+        );
+
+        return true;
+
+    } catch {
+        return false;
+    }
 }
 
 
@@ -1333,6 +1376,7 @@ function notifyRestartFailed() {
                 '\n\n完整日志文件：\n' + getLogFilePath(),
             buttons: [
                 '重试',
+                '复制日志',
                 '退出'
             ],
             defaultId: 0,
@@ -1346,6 +1390,23 @@ function notifyRestartFailed() {
 
                 restartAttempts = 0;
                 scheduleAutoRestart();
+
+            } else if (response === 1) {
+
+                copyLogsToClipboard();
+
+                dialog.showMessageBox({
+                    type: 'info',
+                    title: 'DeepSeek Harness',
+                    message: '日志已复制',
+                    detail:
+                        '日志已复制到剪贴板，请粘贴到聊天里发给开发者。\n\n' +
+                        '之后可从系统托盘重新尝试启动。',
+                    buttons: [
+                        '知道了'
+                    ],
+                    noLink: true
+                });
 
             } else {
 
