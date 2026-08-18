@@ -1505,10 +1505,15 @@ function ensureSkinProfile() {
 
     function skinFilesOk(dir) {
 
-        return
+        /**
+         * 注意：return 表达式必须紧跟 return 或加括号，
+         * 否则 JavaScript 自动分号插入(ASI)会让函数恒返回 undefined。
+         */
+        return (
             fs.existsSync(path.join(dir, 'package.json')) &&
             fs.existsSync(path.join(dir, 'cordis.patch.yml')) &&
-            fs.existsSync(path.join(dir, 'lib', 'index.js'));
+            fs.existsSync(path.join(dir, 'lib', 'index.js'))
+        );
     }
 
     /**
