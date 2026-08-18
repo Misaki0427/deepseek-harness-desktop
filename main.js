@@ -1485,10 +1485,13 @@ function ensureSkinProfile() {
      *    防止杀毒软件静默删除其中一份导致启动崩溃。
      * 每次启动都会校验；缺文件就自动重新部署（自愈）。
      */
+    /**
+     * 注意：SKIN_BUNDLE_NAME 本身已包含 @dsh-external/ 作用域，
+     * 直接拼 node_modules 即可，不要再加一层作用域名。
+     */
     const profileSkinDir = path.join(
         profileDir,
         'node_modules',
-        '@dsh-external',
         SKIN_BUNDLE_NAME
     );
 
@@ -1497,7 +1500,6 @@ function ensureSkinProfile() {
         '.dsh',
         'profiles',
         'node_modules',
-        '@dsh-external',
         SKIN_BUNDLE_NAME
     );
 
