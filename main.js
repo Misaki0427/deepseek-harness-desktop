@@ -1511,7 +1511,13 @@ function ensureSkinProfile() {
             fs.existsSync(path.join(dir, 'lib', 'index.js'));
     }
 
+    /**
+     * 非破坏式部署：不删除现有目录，直接覆盖复制。
+     * 失败时也不会把用户已装好的皮肤删没。
+     */
     function deploySkinTo(dir) {
+
+        console.log('[SKIN] 步骤1: 创建父目录');
 
         fs.mkdirSync(
             path.dirname(dir),
@@ -1520,7 +1526,10 @@ function ensureSkinProfile() {
             }
         );
 
-        fs.rmSync(
+        console.log('[SKIN] 步骤2: cpSync 开始');
+
+        fs.cpSync(
+            SKIN_BUNDLE_DIR,
             dir,
             {
                 recursive: true,
@@ -1528,12 +1537,22 @@ function ensureSkinProfile() {
             }
         );
 
-        fs.cpSync(
-            SKIN_BUNDLE_DIR,
-            dir,
-            {
-                recursive: true
-            }
+        console.log('[SKIN] 步骤3: cpSync 完成');
+
+        let count = -1;
+
+        try {
+            count = fs.readdirSync(dir).length;
+        } catch {}
+
+        console.log('[SKIN] 步骤4: 目标目录文件数 =', count);
+        console.log(
+            '[SKIN] 步骤5: package.json =',
+            fs.existsSync(path.join(dir, 'package.json')),
+            'cordis.patch.yml =',
+            fs.existsSync(path.join(dir, 'cordis.patch.yml')),
+            'lib/index.js =',
+            fs.existsSync(path.join(dir, 'lib', 'index.js'))
         );
     }
 
