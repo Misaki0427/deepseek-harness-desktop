@@ -2515,7 +2515,14 @@ if (!gotSingleInstanceLock) {
 
             dialog.showErrorBox(
                 'DeepSeek Harness',
-                error.message
+                error.message +
+                '\n\n最近日志（供排查）：\n' +
+                (
+                    recentHarnessOutput.length > 0
+                        ? recentHarnessOutput.slice(-10).join('\n')
+                        : '（无 Harness 输出）'
+                ) +
+                '\n\n完整日志文件：\n' + getLogFilePath()
             );
 
 
