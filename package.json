@@ -23,6 +23,13 @@
     "productName": "DeepSeek Harness",
     "artifactName": "DeepSeek-Harness-Desktop-${version}-Setup.${ext}",
     "electronDist": "node_modules/electron/dist",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Misaki0427",
+        "repo": "deepseek-harness-desktop"
+      }
+    ],
     "files": [
       "main.js",
       "preload.js",

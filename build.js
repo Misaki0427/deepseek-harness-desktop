@@ -421,9 +421,75 @@ async function cleanupOldUnpacked(currentVersion) {
  * electron-builder
  * ========================================================= */
 
+/**
+ * 给 electron-builder 的 NSIS 模板打补丁：
+ * 安装目录页结束、开始装文件之前，自动创建不存在的安装目录，
+ * 用户无需手动预建文件夹。
+ *
+ * 幂等：模板已包含补丁标记时跳过；
+ * node_modules 重装后补丁丢失，但每次构建都会重新打上。
+ */
+async function patchNsisTemplate() {
+
+    const templatePath = require.resolve(
+        "app-builder-lib/templates/nsis/assistedInstaller.nsh"
+    );
+
+    let content = fs.readFileSync(templatePath, "utf8");
+
+    const marker =
+        "dshAutoCreateInstallDir";
+
+    if (content.includes(marker)) {
+        return;
+    }
+
+    if (!content.includes("Function instFilesPre")) {
+
+        console.warn(
+            "⚠️ NSIS 模板结构变化，跳过安装目录自动创建补丁"
+        );
+
+        return;
+    }
+
+    content = content.replace(
+        /\$\{endIf\}[\r\n]+\s*FunctionEnd[\r\n]+/,
+        () => {
+
+            return [
+                "${endIf}",
+                "",
+                "      # " + marker + ": 自动创建不存在的安装目录",
+                "      CreateDirectory \"$INSTDIR\"",
+                "",
+                "FunctionEnd",
+                ""
+            ].join("\r\n");
+        }
+    );
+
+    if (!content.includes(marker)) {
+
+        console.warn(
+            "⚠️ NSIS 模板补丁未生效（模式不匹配），跳过"
+        );
+
+        return;
+    }
+
+    fs.writeFileSync(templatePath, content);
+
+    console.log(
+        "✅ NSIS 模板已打补丁：安装目录自动创建"
+    );
+}
+
 async function runBuild() {
 
     await prepareHarnessRuntime();
+
+    await patchNsisTemplate();
 
     /*
      * 清理旧版本输出

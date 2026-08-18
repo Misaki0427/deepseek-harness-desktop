@@ -1741,6 +1741,216 @@ function ensureSkinProfile() {
 
 
 /* =========================================================
+ * 自动更新（electron-updater + GitHub Releases）
+ * ========================================================= */
+
+let autoUpdater = null;
+
+let manualUpdateCheck = false;
+
+function initAutoUpdater() {
+
+    try {
+
+        const electronUpdater =
+            require('electron-updater');
+
+        autoUpdater =
+            electronUpdater.autoUpdater;
+
+    } catch {
+
+        console.warn(
+            '[UPDATE] 未安装 electron-updater，自动更新不可用'
+        );
+
+        return;
+    }
+
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on(
+        'checking-for-update',
+        () => {
+            console.log('[UPDATE] 正在检查更新...');
+        }
+    );
+
+    autoUpdater.on(
+        'update-available',
+        (info) => {
+
+            console.log(
+                '[UPDATE] 发现新版本：' + info.version
+            );
+
+            dialog.showMessageBox({
+                type: 'info',
+                title: 'DeepSeek Harness',
+                message: '发现新版本 v' + info.version,
+                detail:
+                    '是否现在下载更新？\n\n' +
+                    '下载完成后重启应用即可完成升级，用户数据全部保留。',
+                buttons: [
+                    '下载更新',
+                    '稍后'
+                ],
+                defaultId: 0,
+                cancelId: 1,
+                noLink: true
+            }).then(
+                ({ response }) => {
+
+                    if (response === 0) {
+
+                        autoUpdater.downloadUpdate().catch(
+                            (error) => {
+
+                                console.error(
+                                    '[UPDATE] 下载失败：',
+                                    error.message
+                                );
+                            }
+                        );
+                    }
+                }
+            ).catch(
+                () => {
+                    // 忽略弹窗失败
+                }
+            );
+        }
+    );
+
+    autoUpdater.on(
+        'update-not-available',
+        () => {
+
+            console.log(
+                '[UPDATE] 已是最新版本'
+            );
+
+            if (manualUpdateCheck) {
+
+                manualUpdateCheck = false;
+
+                dialog.showMessageBox({
+                    type: 'info',
+                    title: 'DeepSeek Harness',
+                    message: '已是最新版本',
+                    buttons: [
+                        '知道了'
+                    ],
+                    noLink: true
+                }).catch(() => {});
+            }
+        }
+    );
+
+    autoUpdater.on(
+        'download-progress',
+        (progress) => {
+
+            console.log(
+                '[UPDATE] 下载进度：' + progress.percent.toFixed(1) + '%'
+            );
+        }
+    );
+
+    autoUpdater.on(
+        'update-downloaded',
+        (info) => {
+
+            console.log(
+                '[UPDATE] 新版本已下载：' + info.version
+            );
+
+            dialog.showMessageBox({
+                type: 'info',
+                title: 'DeepSeek Harness',
+                message: '新版本 v' + info.version + ' 已下载完成',
+                detail:
+                    '点击"立即重启安装"完成升级（用户数据保留）。',
+                buttons: [
+                    '立即重启安装',
+                    '稍后'
+                ],
+                defaultId: 0,
+                cancelId: 1,
+                noLink: true
+            }).then(
+                ({ response }) => {
+
+                    if (response === 0) {
+
+                        autoUpdater.quitAndInstall(
+                            false,
+                            true
+                        );
+                    }
+                }
+            ).catch(
+                () => {
+                    // 忽略弹窗失败
+                }
+            );
+        }
+    );
+
+    autoUpdater.on(
+        'error',
+        (error) => {
+
+            console.error(
+                '[UPDATE] 更新检查失败：',
+                error.message
+            );
+        }
+    );
+}
+
+/**
+ * 检查更新。manual=true 表示用户从托盘手动触发，
+ * 无新版本时弹窗告知。
+ */
+function checkForUpdates(manual) {
+
+    if (!autoUpdater) {
+
+        if (manual) {
+
+            dialog.showMessageBox({
+                type: 'info',
+                title: 'DeepSeek Harness',
+                message: '自动更新不可用',
+                detail:
+                    '当前版本未包含更新组件，请从 GitHub Releases 下载新版安装。',
+                buttons: [
+                    '知道了'
+                ],
+                noLink: true
+            }).catch(() => {});
+        }
+
+        return;
+    }
+
+    manualUpdateCheck = manual === true;
+
+    autoUpdater.checkForUpdates().catch(
+        (error) => {
+
+            console.error(
+                '[UPDATE] 检查失败：',
+                error.message
+            );
+        }
+    );
+}
+
+
+/* =========================================================
  * 打开 Harness
  * ========================================================= */
 
@@ -1918,6 +2128,14 @@ async function updateTray() {
                             error.message
                         );
                     }
+                }
+            },
+
+            {
+                label: '检查更新',
+
+                click: () => {
+                    checkForUpdates(true);
                 }
             },
 
@@ -2667,6 +2885,9 @@ if (!gotSingleInstanceLock) {
             );
 
 
+            initAutoUpdater();
+
+
             /**
              * 权限请求白名单。
              *
@@ -2699,6 +2920,17 @@ if (!gotSingleInstanceLock) {
 
 
             await bootstrap();
+
+
+            /**
+             * 启动成功 10 秒后静默检查一次更新。
+             */
+            setTimeout(
+                () => {
+                    checkForUpdates(false);
+                },
+                10000
+            );
 
 
             /**
