@@ -1467,6 +1467,58 @@ function ensureSkinProfile() {
         '@deepseek-ai/dsh-web-app'
     ];
 
+    /**
+     * 关键一步：把皮肤包复制进 profile 自己的 node_modules。
+     *
+     * dsh 的 include 加载器从 profile 目录 import 皮肤包名，
+     * 只放进运行时 node_modules 无法被解析，
+     * 会报 ERR_MODULE_NOT_FOUND 导致服务启动崩溃。
+     */
+    const profileSkinDir = path.join(
+        profileDir,
+        'node_modules',
+        '@dsh-external',
+        SKIN_BUNDLE_NAME
+    );
+
+    let skinInstalled = fs.existsSync(
+        path.join(profileSkinDir, 'package.json')
+    );
+
+    if (!skinInstalled) {
+
+        try {
+
+            fs.mkdirSync(
+                path.dirname(profileSkinDir),
+                {
+                    recursive: true
+                }
+            );
+
+            fs.cpSync(
+                SKIN_BUNDLE_DIR,
+                profileSkinDir,
+                {
+                    recursive: true
+                }
+            );
+
+            skinInstalled = true;
+
+            console.log(
+                '[SKIN] 已把皮肤包部署到 profile'
+            );
+
+        } catch (error) {
+
+            console.error(
+                '[SKIN] 皮肤包复制失败：',
+                error.message
+            );
+        }
+    }
+
     let manifest;
 
     if (fs.existsSync(manifestPath)) {
@@ -1486,40 +1538,6 @@ function ensureSkinProfile() {
             return;
         }
 
-        const bundles =
-            manifest.dsh?.profile?.bundles;
-
-        if (!Array.isArray(bundles)) {
-            return;
-        }
-
-        if (bundles.includes(SKIN_BUNDLE_NAME)) {
-
-            // 已经启用，无需处理
-            return;
-        }
-
-        /**
-         * 仅当用户从未改动默认配置时才自动补上皮肤，
-         * 尊重用户的自定义配置。
-         */
-        const isDefault =
-            bundles.length === DEFAULT_BUNDLES.length &&
-            DEFAULT_BUNDLES.every(
-                (name) => bundles.includes(name)
-            );
-
-        if (!isDefault) {
-
-            console.log(
-                '[SKIN] 用户自定义了配置，不自动修改'
-            );
-
-            return;
-        }
-
-        bundles.push(SKIN_BUNDLE_NAME);
-
     } else {
 
         fs.mkdirSync(
@@ -1529,6 +1547,10 @@ function ensureSkinProfile() {
             }
         );
 
+        /**
+         * 全新机器：先按默认模板创建，
+         * 皮肤是否加入 bundles 由下面的同步逻辑决定。
+         */
         manifest = {
             name: 'dsh-profile-web',
             private: true,
@@ -1536,16 +1558,12 @@ function ensureSkinProfile() {
             dsh: {
                 profile: {
                     bundles: [
-                        ...DEFAULT_BUNDLES,
-                        SKIN_BUNDLE_NAME
+                        ...DEFAULT_BUNDLES
                     ]
                 }
             }
         };
 
-        /**
-         * 补全 profile 模板文件，与 dsh 默认初始化一致。
-         */
         fs.writeFileSync(
             path.join(profileDir, 'cordis.patch.yml'),
             [
@@ -1578,13 +1596,58 @@ function ensureSkinProfile() {
         );
     }
 
+    /**
+     * 同步 bundles 与皮肤部署状态：
+     * - 皮肤已部署 + 默认配置 → 加入 bundles（开盒即用）
+     * - 皮肤部署失败 → 必须从 bundles 移除，否则 dsh 启动崩溃
+     */
+    const bundles =
+        manifest.dsh?.profile?.bundles;
+
+    if (Array.isArray(bundles)) {
+
+        if (skinInstalled) {
+
+            if (!bundles.includes(SKIN_BUNDLE_NAME)) {
+
+                const isDefault =
+                    bundles.length === DEFAULT_BUNDLES.length &&
+                    DEFAULT_BUNDLES.every(
+                        (name) => bundles.includes(name)
+                    );
+
+                if (isDefault) {
+
+                    bundles.push(SKIN_BUNDLE_NAME);
+
+                    console.log(
+                        '[SKIN] 已启用内置鲸鱼娘皮肤（深海女仆工坊）'
+                    );
+
+                } else {
+
+                    console.log(
+                        '[SKIN] 用户自定义了配置，不自动修改'
+                    );
+                }
+            }
+
+        } else if (bundles.includes(SKIN_BUNDLE_NAME)) {
+
+            bundles.splice(
+                bundles.indexOf(SKIN_BUNDLE_NAME),
+                1
+            );
+
+            console.warn(
+                '[SKIN] 皮肤部署失败，已从 bundles 移除，保证服务可启动'
+            );
+        }
+    }
+
     fs.writeFileSync(
         manifestPath,
         JSON.stringify(manifest, null, 2)
-    );
-
-    console.log(
-        '[SKIN] 已启用内置鲸鱼娘皮肤（深海女仆工坊）'
     );
 }
 
