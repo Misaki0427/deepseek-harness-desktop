@@ -1473,6 +1473,12 @@ function ensureSkinProfile() {
      * dsh 的 include 加载器从 profile 目录 import 皮肤包名，
      * 只放进运行时 node_modules 无法被解析，
      * 会报 ERR_MODULE_NOT_FOUND 导致服务启动崩溃。
+     *
+     * 双保险：
+     * 1. 主位置 = profile\node_modules（解析路径第一跳）
+     * 2. 冗余位置 = profiles\node_modules（dsh 扁平 fallback，第二跳），
+     *    防止杀毒软件静默删除其中一份导致启动崩溃。
+     * 每次启动都会校验；缺文件就自动重新部署（自愈）。
      */
     const profileSkinDir = path.join(
         profileDir,
@@ -1481,39 +1487,116 @@ function ensureSkinProfile() {
         SKIN_BUNDLE_NAME
     );
 
-    let skinInstalled = fs.existsSync(
-        path.join(profileSkinDir, 'package.json')
+    const fallbackSkinDir = path.join(
+        os.homedir(),
+        '.dsh',
+        'profiles',
+        'node_modules',
+        '@dsh-external',
+        SKIN_BUNDLE_NAME
     );
+
+    function skinFilesOk(dir) {
+
+        return
+            fs.existsSync(path.join(dir, 'package.json')) &&
+            fs.existsSync(path.join(dir, 'cordis.patch.yml')) &&
+            fs.existsSync(path.join(dir, 'lib', 'index.js'));
+    }
+
+    function deploySkinTo(dir) {
+
+        fs.mkdirSync(
+            path.dirname(dir),
+            {
+                recursive: true
+            }
+        );
+
+        fs.rmSync(
+            dir,
+            {
+                recursive: true,
+                force: true
+            }
+        );
+
+        fs.cpSync(
+            SKIN_BUNDLE_DIR,
+            dir,
+            {
+                recursive: true
+            }
+        );
+    }
+
+    console.log(
+        '[SKIN] 皮肤源：' + SKIN_BUNDLE_DIR
+    );
+
+    console.log(
+        '[SKIN] 部署目标：' + profileSkinDir
+    );
+
+    let skinInstalled = skinFilesOk(profileSkinDir);
 
     if (!skinInstalled) {
 
         try {
 
-            fs.mkdirSync(
-                path.dirname(profileSkinDir),
-                {
-                    recursive: true
-                }
-            );
+            deploySkinTo(profileSkinDir);
 
-            fs.cpSync(
-                SKIN_BUNDLE_DIR,
-                profileSkinDir,
-                {
-                    recursive: true
-                }
-            );
+            /**
+             * 复制后必须校验落盘结果，
+             * 不能只相信 cpSync 没有抛异常。
+             */
+            skinInstalled = skinFilesOk(profileSkinDir);
 
-            skinInstalled = true;
+            if (skinInstalled) {
 
-            console.log(
-                '[SKIN] 已把皮肤包部署到 profile'
-            );
+                console.log(
+                    '[SKIN] 已把皮肤包部署到 profile'
+                );
+
+            } else {
+
+                console.error(
+                    '[SKIN] 皮肤包复制后校验失败，文件未落盘'
+                );
+            }
 
         } catch (error) {
 
             console.error(
                 '[SKIN] 皮肤包复制失败：',
+                error.message
+            );
+        }
+    }
+
+    /**
+     * 冗余副本：主位置成功后，确保 fallback 位置也有一份。
+     */
+    if (skinInstalled) {
+
+        try {
+
+            if (!skinFilesOk(fallbackSkinDir)) {
+
+                deploySkinTo(fallbackSkinDir);
+
+                if (skinFilesOk(fallbackSkinDir)) {
+
+                    console.log(
+                        '[SKIN] 已部署冗余副本到 profiles\\node_modules'
+                    );
+                }
+            }
+
+        } catch (error) {
+
+            console.warn(
+                '[SKIN] 冗余副本部署失败：',
                 error.message
             );
         }
