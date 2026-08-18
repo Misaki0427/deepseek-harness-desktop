@@ -17,6 +17,144 @@ const os = require('os');
 
 
 /* =========================================================
+ * 文件日志（黑匣子）
+ *
+ * 所有控制台输出（含 Harness 子进程输出）都会同时写入
+ * %APPDATA%\deepseek-harness-desktop\logs\desktop.log，
+ * 用于在用户机器上远程排查启动/崩溃问题。
+ * ========================================================= */
+
+let logFilePath = null;
+let logStream = null;
+
+let recentHarnessOutput = [];
+
+function initLogging() {
+
+    try {
+
+        const logDir = path.join(
+            app.getPath('userData'),
+            'logs'
+        );
+
+        fs.mkdirSync(
+            logDir,
+            {
+                recursive: true
+            }
+        );
+
+        logFilePath = path.join(
+            logDir,
+            'desktop.log'
+        );
+
+        /**
+         * 简单轮转：超过 2MB 归档为 .old
+         */
+        if (
+            fs.existsSync(logFilePath) &&
+            fs.statSync(logFilePath).size > 2 * 1024 * 1024
+        ) {
+
+            fs.rmSync(
+                logFilePath + '.old',
+                {
+                    force: true
+                }
+            );
+
+            fs.renameSync(
+                logFilePath,
+                logFilePath + '.old'
+            );
+        }
+
+        logStream = fs.createWriteStream(
+            logFilePath,
+            {
+                flags: 'a'
+            }
+        );
+
+    } catch {
+        logStream = null;
+    }
+}
+
+function writeLog(level, args) {
+
+    if (!logStream) {
+        return;
+    }
+
+    try {
+
+        const text = args.map(
+            (item) => {
+
+                if (typeof item === 'string') {
+                    return item;
+                }
+
+                try {
+                    return JSON.stringify(item);
+                } catch {
+                    return String(item);
+                }
+            }
+        ).join(' ');
+
+        logStream.write(
+            `[${new Date().toISOString()}] [${level}] ${text}\r\n`
+        );
+
+    } catch {
+        // 忽略日志写入失败
+    }
+}
+
+function patchConsole() {
+
+    const original = {
+        log: console.log,
+        error: console.error,
+        warn: console.warn
+    };
+
+    console.log = (...args) => {
+        original.log(...args);
+        writeLog('INFO', args);
+    };
+
+    console.error = (...args) => {
+        original.error(...args);
+        writeLog('ERROR', args);
+    };
+
+    console.warn = (...args) => {
+        original.warn(...args);
+        writeLog('WARN', args);
+    };
+}
+
+function recordHarnessOutput(text) {
+
+    recentHarnessOutput.push(text);
+
+    if (recentHarnessOutput.length > 40) {
+        recentHarnessOutput.shift();
+    }
+}
+
+function getLogFilePath() {
+
+    return logFilePath || '(日志未初始化)';
+}
+
+
+/* =========================================================
  * 基本配置
  * ========================================================= */
 
@@ -736,6 +874,8 @@ function startHarness() {
                                 console.log(
                                     `[Harness] ${text}`
                                 );
+
+                                recordHarnessOutput(text);
                             }
                         }
                     );
@@ -760,6 +900,8 @@ function startHarness() {
                                 console.error(
                                     `[Harness] ${text}`
                                 );
+
+                                recordHarnessOutput(text);
                             }
                         }
                     );
@@ -1181,7 +1323,14 @@ function notifyRestartFailed() {
             message: 'Harness 服务多次启动失败',
             detail:
                 '本地服务在自动恢复 3 次后仍无法连接。\n\n' +
-                '点击"重试"可再试一次，点击"退出"将关闭程序。',
+                '点击"重试"可再试一次，点击"退出"将关闭程序。\n\n' +
+                '最近日志（供排查）：\n' +
+                (
+                    recentHarnessOutput.length > 0
+                        ? recentHarnessOutput.slice(-10).join('\n')
+                        : '（无 Harness 输出）'
+                ) +
+                '\n\n完整日志文件：\n' + getLogFilePath(),
             buttons: [
                 '重试',
                 '退出'
@@ -1557,6 +1706,19 @@ async function updateTray() {
                             error.message
                         );
                     }
+                }
+            },
+
+            {
+                label: '打开日志文件夹',
+                click: () => {
+
+                    const logDir = path.join(
+                        app.getPath('userData'),
+                        'logs'
+                    );
+
+                    shell.openPath(logDir);
                 }
             },
 
@@ -2268,6 +2430,30 @@ if (!gotSingleInstanceLock) {
     async () => {
 
         try {
+
+            /**
+             * 黑匣子日志：
+             * 文件日志 + 控制台转发 + 启动信息。
+             */
+            initLogging();
+            patchConsole();
+
+            console.log(
+                '======================================'
+            );
+            console.log(
+                `版本：${app.getVersion()}`
+            );
+            console.log(
+                `平台：${process.platform} ${process.arch}`
+            );
+            console.log(
+                '日志文件：' + getLogFilePath()
+            );
+            console.log(
+                '======================================'
+            );
+
 
             /**
              * 权限请求白名单。
