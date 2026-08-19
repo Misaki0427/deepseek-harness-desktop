@@ -2511,6 +2511,62 @@ function createWindow() {
 
 
     /* =====================================================
+     * 快捷键：Alt+Enter 在输入框中插入换行
+     *
+     * Harness 网页默认把 Alt+Enter 用于发送消息；
+     * 这里在主进程层面拦截，改为向焦点输入框插入换行，
+     * 不动网页前端代码，升级也不受影响。
+     * ===================================================== */
+
+    mainWindow.webContents.on(
+        'before-input-event',
+        (event, input) => {
+
+            if (
+                input.type !== 'keyDown' ||
+                !input.alt ||
+                input.key !== 'Enter'
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const injected = [
+                '(function () {',
+                '    var el = document.activeElement;',
+                '    if (!el) return "no-target";',
+                '    if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") {',
+                '        var start = el.selectionStart;',
+                '        var end = el.selectionEnd;',
+                '        var setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;',
+                '        var text = el.value;',
+                '        setter.call(el, text.slice(0, start) + "\\n" + text.slice(end));',
+                '        el.selectionStart = el.selectionEnd = start + 1;',
+                '        el.dispatchEvent(new Event("input", { bubbles: true }));',
+                '        return "inserted-textarea";',
+                '    }',
+                '    if (el.isContentEditable) {',
+                '        try { document.execCommand("insertLineBreak"); } catch (e) {}',
+                '        el.dispatchEvent(new Event("input", { bubbles: true }));',
+                '        return "inserted-editable";',
+                '    }',
+                '    return "no-target";',
+                '})()'
+            ].join('\n');
+
+            mainWindow.webContents.executeJavaScript(
+                injected
+            ).catch(
+                () => {
+                    // 忽略注入失败
+                }
+            );
+        }
+    );
+
+
+    /* =====================================================
      * 新窗口处理
      * ===================================================== */
 
