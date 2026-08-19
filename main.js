@@ -2100,14 +2100,6 @@ async function updateTray() {
     const contextMenu =
         Menu.buildFromTemplate([
             {
-                label: '打开 Harness',
-                enabled: running,
-                click: () => {
-                    openHarness();
-                }
-            },
-
-            {
                 label: '显示管理窗口',
                 click: () => {
 
@@ -2129,6 +2121,11 @@ async function updateTray() {
                         }
                     }
                 }
+            },
+
+            {
+                label: statusText,
+                enabled: false
             },
 
             {
@@ -2226,6 +2223,10 @@ async function updateTray() {
             },
 
             {
+                type: 'separator'
+            },
+
+            {
                 label: '插件市场',
 
                 click: () => {
@@ -2234,18 +2235,18 @@ async function updateTray() {
             },
 
             {
-                label: '检查 Harness 更新',
+                label: '检查桌面端更新',
 
                 click: () => {
-                    harnessUpdate.checkForHarnessUpdate(true);
+                    checkForUpdates(true);
                 }
             },
 
             {
-                label: '检查更新',
+                label: '检查 Harness 更新',
 
                 click: () => {
-                    checkForUpdates(true);
+                    harnessUpdate.checkForHarnessUpdate(true);
                 }
             },
 
@@ -2260,15 +2261,6 @@ async function updateTray() {
 
                     shell.openPath(logDir);
                 }
-            },
-
-            {
-                type: 'separator'
-            },
-
-            {
-                label: statusText,
-                enabled: false
             },
 
             {
