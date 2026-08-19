@@ -21,38 +21,82 @@ const os = require('os');
  * 文件日志（黑匣子）
  *
  * 所有控制台输出（含 Harness 子进程输出）都会同时写入
- * %APPDATA%\deepseek-harness-desktop\logs\desktop.log，
- * 用于在用户机器上远程排查启动/崩溃问题。
+ * %APPDATA%\deepseek-harness-desktop\logs\ 目录，
+ * 按【本地日期】每天一个文件（desktop-YYYY-MM-DD.log），
+ * 跨天自动切换，用于在用户机器上远程排查启动/崩溃问题。
  * ========================================================= */
 
+let logDirPath = null;
 let logFilePath = null;
 let logStream = null;
+let currentLogDate = null;
 
 let recentHarnessOutput = [];
 
+function localDateString() {
+
+    // 按【本地日期】划分日志文件（自然日，跨天自动切换）
+    const d = new Date();
+
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
 function initLogging() {
+
+    logDirPath = null;
+    logFilePath = null;
+    logStream = null;
+    currentLogDate = null;
+
+    ensureLogStream();
+}
+
+function ensureLogStream() {
 
     try {
 
-        const logDir = path.join(
-            app.getPath('userData'),
-            'logs'
-        );
+        if (!logDirPath) {
 
-        fs.mkdirSync(
-            logDir,
-            {
-                recursive: true
+            logDirPath = path.join(
+                app.getPath('userData'),
+                'logs'
+            );
+
+            fs.mkdirSync(
+                logDirPath,
+                {
+                    recursive: true
+                }
+            );
+        }
+
+        const today = localDateString();
+
+        if (logStream && currentLogDate === today) {
+            return;
+        }
+
+        if (logStream) {
+
+            try {
+                logStream.end();
+            } catch {
+                // 忽略旧流关闭失败
             }
-        );
+        }
 
+        currentLogDate = today;
         logFilePath = path.join(
-            logDir,
-            'desktop.log'
+            logDirPath,
+            `desktop-${today}.log`
         );
 
         /**
-         * 简单轮转：超过 2MB 归档为 .old
+         * 简单轮转：单日文件超过 2MB 归档为 .old
          */
         if (
             fs.existsSync(logFilePath) &&
@@ -85,6 +129,9 @@ function initLogging() {
 }
 
 function writeLog(level, args) {
+
+    // 每次写入前确认流指向【今天】的文件（跨天自动切换）
+    ensureLogStream();
 
     if (!logStream) {
         return;
