@@ -10,7 +10,8 @@
 - 🚀 **自动启动本地服务**：启动应用后自动拉起 Harness（127.0.0.1:3080），就绪后自动打开界面
 - 🎨 **鲸鱼娘主题**：应用图标、安装器图标、托盘图标、启动页主题背景，四件套独立设计（Docker 风格圆角化）
 - 🐋 **内置鲸鱼娘皮肤**：安装包自带"深海女仆工坊"界面皮肤，首次启动自动部署，开盒即用（来源标注见下文）
-- 📌 **系统托盘**：关闭窗口最小化到托盘，托盘菜单支持打开 / 启动 / 停止 / 重启 / 状态显示 / 退出
+- 📌 **系统托盘**：关闭窗口最小化到托盘，托盘菜单支持打开 / 启动 / 停止 / 重启 / 插件市场 / 状态显示 / 退出
+- 🛍️ **插件市场**：托盘一键打开独立市场窗口，浏览 / 搜索 / 一键安装 / 卸载 / 启用禁用 / 更新插件，全程无需命令行；内置 pnpm，用户机器零环境依赖；操作前自动备份配置，失败自动回滚；市场数据多源在线更新 + 离线兜底
 - 🛡️ **稳定性保障**：
   - 看门狗防残留（Electron 被强杀时自动清理 Harness 进程树）
   - 崩溃自动恢复（服务异常退出后 2s/4s/6s 退避重试，失败弹窗提示）
@@ -29,7 +30,7 @@ DeepSeek-Harness.exe（Electron 主进程）
    ├─ 启动内置 node.exe → watchdog.js → dsh web
    ├─ 监听 127.0.0.1:3080（Harness 本地服务）
    ├─ 服务就绪 → 窗口切换到 Harness Web UI
-   └─ 系统托盘（隐藏/启动/停止/重启/退出）
+   └─ 系统托盘（隐藏/启动/停止/重启/插件市场/退出）
 ```
 
 Electron 只负责桌面生命周期；Harness 负责核心业务；两者通过本地 HTTP 通信，完全解耦。
@@ -53,7 +54,7 @@ npm install
 # 2. 准备内置运行时（harness-runtime 目录）
 #    把 Windows x64 版 node.exe 改名为 dsh-service.exe 放到 harness-runtime\dsh-service.exe
 cd harness-runtime
-npm install        # 安装 @deepseek-ai/dsh（版本见 package.json）
+npm install        # 安装 @deepseek-ai/dsh + 内置 pnpm（插件市场安装功能依赖，版本见 package.json）
 
 # 3. 开发模式启动
 cd ..
@@ -73,8 +74,11 @@ npm run release:major    # 特大变动：2.0.3 → 3.0.0
 ## 📁 目录结构
 
 ```
-├── main.js                 # Electron 主进程（窗口/托盘/服务生命周期/看门狗/自恢复）
-├── preload.js              # contextBridge 最小桥接
+├── main.js                 # Electron 主进程（窗口/托盘/服务生命周期/看门狗/自恢复/插件市场）
+├── market.js               # 插件市场模块（市场数据/内置 pnpm 装卸/启停/备份回滚）
+├── market.html             # 插件市场窗口（鲸鱼娘主题，浏览/搜索/管理插件）
+├── market/plugins.json     # 市场数据源（内置兜底 + GitHub 在线更新）
+├── preload.js              # contextBridge 最小桥接（含 marketBridge）
 ├── index.html              # 主题启动页（鲸鱼娘主题背景）
 ├── build.js                # 打包编排（精简运行时 + afterPack + 旧产物清理）
 ├── package.json            # 版本、脚本与 electron-builder 配置（唯一来源）
@@ -97,6 +101,18 @@ npm run release:major    # 特大变动：2.0.3 → 3.0.0
 | 2.1.4 | 聊天框 Alt+Enter 换行、中文行为指令、本地 OCR 工具 |
 
 > 更早版本见 [Releases](../../releases) 历史归档。
+
+## 🛍️ 插件市场（自 v2.2.0）
+
+托盘右键 →「插件市场」，即可打开独立市场窗口：
+
+- **市场页**：浏览插件列表、搜索、一键安装；皮肤等内置组件标记「内置」不可误卸
+- **已安装页**：查看版本与启用状态，支持启用 / 禁用、更新、卸载；操作完成后自动重启 Harness 生效
+- **零环境依赖**：安装/卸载/更新全部由内置 dsh-service.exe + 内置 pnpm 完成，用户无需安装 Node.js / pnpm
+- **安全可靠**：包名白名单校验防注入；每次操作前自动备份用户插件配置（失败自动回滚）；同一时刻只执行一个操作
+- **市场数据**：来源为仓库内 `market/plugins.json`，在线时经 jsDelivr CDN / GitHub Raw 自动拉取最新列表（拉取成功会缓存，断网时用缓存/内置数据，市场永远可用）
+
+**维护市场条目**：直接编辑仓库根目录 `market/plugins.json`（`name` 即 npm 包名），push 后所有用户的在线市场自动更新；插件安装失败可提示用户检查网络（如开启 Clash TUN）。
 
 ## 🐋 鲸鱼娘皮肤（内置，开盒即用）
 
