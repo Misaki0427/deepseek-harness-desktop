@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "plugins": [
+    {
+      "name": "dsh-img",
+      "description": "图片识别插件：粘贴图片或发送图片消息即可识别分析（GLM-4V-Flash 视觉模型 + 本地 Tesseract OCR 兜底）",
+      "author": "dsh 社区",
+      "homepage": "https://www.npmjs.com/package/dsh-img",
+      "tags": [
+        "图片识别",
+        "OCR",
+        "视觉"
+      ],
+      "latestVersion": "0.4.0"
+    },
+    {
+      "name": "@dsh-external/dsh-client-ui-skin-maid-atelier",
+      "description": "鲸鱼娘主题皮肤（随应用内置自动部署，无需手动安装）",
+      "author": "Small-tailqwq",
+      "homepage": "https://github.com/Small-tailqwq/dsh-deep-whale",
+      "tags": [
+        "皮肤",
+        "主题"
+      ],
+      "builtin": true
+    }
+  ]
+}

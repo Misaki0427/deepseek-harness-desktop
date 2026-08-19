@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:">
+<title>插件市场</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+        height: 100%;
+        font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    }
+
+    body {
+        background: #22306e;
+        background-image:
+            linear-gradient(rgba(34, 48, 110, 0.55), rgba(34, 48, 110, 0.78)),
+            url(theme-bg.png);
+        background-size: cover;
+        background-position: center;
+        color: #2b3350;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .header {
+        padding: 18px 24px 12px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .header h1 {
+        font-size: 22px;
+        color: #ffffff;
+        letter-spacing: 1px;
+    }
+
+    .header .sub {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.75);
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+    }
+
+    .badge.ok { background: rgba(46, 160, 100, 0.85); }
+    .badge.off { background: rgba(255, 255, 255, 0.28); }
+
+    .toolbar {
+        padding: 4px 24px 10px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 8px;
+    }
+
+    .tab {
+        padding: 8px 20px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        background: transparent;
+        color: #ffffff;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .tab.active {
+        background: #ffffff;
+        color: #22306e;
+        border-color: #ffffff;
+        font-weight: bold;
+    }
+
+    .search {
+        flex: 1;
+        min-width: 200px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.92);
+        font-size: 14px;
+        outline: none;
+    }
+
+    .refresh {
+        padding: 8px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        background: transparent;
+        color: #ffffff;
+        cursor: pointer;
+        font-size: 13px;
+    }
+
+    .refresh:hover { background: rgba(255, 255, 255, 0.15); }
+
+    .list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 6px 24px 24px;
+    }
+
+    .card {
+        background: rgba(255, 255, 255, 0.94);
+        border-radius: 14px;
+        padding: 16px 18px;
+        margin-bottom: 12px;
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        box-shadow: 0 4px 14px rgba(10, 20, 60, 0.25);
+    }
+
+    .card .icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        background: #e8ecf9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .card .body { flex: 1; min-width: 0; }
+
+    .card .title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .card .title {
+        font-size: 15px;
+        font-weight: bold;
+        color: #22306e;
+        word-break: break-all;
+    }
+
+    .card .version {
+        font-size: 12px;
+        color: #7a86a8;
+    }
+
+    .card .desc {
+        font-size: 13px;
+        color: #5a6480;
+        margin-top: 6px;
+        line-height: 1.5;
+    }
+
+    .card .meta {
+        font-size: 12px;
+        color: #9aa3c0;
+        margin-top: 6px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .tag {
+        background: #eef1fb;
+        color: #55618f;
+        border-radius: 6px;
+        padding: 1px 8px;
+        font-size: 11px;
+    }
+
+    .state-chip {
+        font-size: 11px;
+        border-radius: 6px;
+        padding: 2px 8px;
+    }
+
+    .state-chip.on { background: #e2f6ea; color: #1f8a4c; }
+    .state-chip.off { background: #f0f2f8; color: #8a93b3; }
+
+    .card .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+        flex-shrink: 0;
+    }
+
+    button.action {
+        padding: 7px 18px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+        white-space: nowrap;
+        min-width: 92px;
+    }
+
+    button.action:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    button.action.primary {
+        background: #2b4bd9;
+        color: #ffffff;
+    }
+
+    button.action.primary:hover:not(:disabled) {
+        background: #1f3bb8;
+    }
+
+    button.action.warn {
+        background: #e8ecf9;
+        color: #b23b3b;
+    }
+
+    button.action.warn:hover:not(:disabled) {
+        background: #f6dddd;
+    }
+
+    button.action.plain {
+        background: #eef1fb;
+        color: #44508c;
+    }
+
+    button.action.plain:hover:not(:disabled) {
+        background: #e2e7f7;
+    }
+
+    button.action.link {
+        background: transparent;
+        color: #2b4bd9;
+        min-width: auto;
+        padding: 4px 6px;
+        text-decoration: underline;
+    }
+
+    .empty {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.85);
+        padding: 60px 0;
+        font-size: 14px;
+    }
+
+    .footer {
+        padding: 10px 24px;
+        background: rgba(20, 30, 70, 0.75);
+        color: #c9d4f2;
+        font-size: 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        min-height: 38px;
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+    <div class="header">
+        <h1>🐋 插件市场</h1>
+        <span class="sub">DeepSeek Harness Desktop</span>
+        <span class="badge" id="sourceBadge">加载中…</span>
+    </div>
+
+    <div class="toolbar">
+        <div class="tabs">
+            <button class="tab active" id="tabMarket">市场</button>
+            <button class="tab" id="tabInstalled">已安装</button>
+        </div>
+        <input class="search" id="search" type="text"
+               placeholder="搜索插件名称 / 描述 / 标签…">
+        <button class="refresh" id="refreshBtn">↻ 刷新</button>
+    </div>
+
+    <div class="list" id="list"></div>
+
+    <div class="footer">
+        <span id="busySpinner" style="display:none" class="spinner"></span>
+        <span id="statusText">就绪</span>
+    </div>
+
+<script>
+'use strict';
+
+const bridge = window.marketBridge;
+
+let state = null;
+let currentTab = 'market';
+let busy = false;
+
+/* ---------- 基础 ---------- */
+
+function esc(text) {
+
+    return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function setStatus(text, busyFlag) {
+
+    busy = !!busyFlag;
+
+    document.getElementById('statusText').textContent = text;
+    document.getElementById('busySpinner').style.display =
+        busy ? 'inline-block' : 'none';
+
+    render();
+}
+
+/* ---------- 渲染 ---------- */
+
+function render() {
+
+    const listEl = document.getElementById('list');
+    const search = document
+        .getElementById('search')
+        .value
+        .trim()
+        .toLowerCase();
+
+    listEl.innerHTML = '';
+
+    if (!state) {
+        return;
+    }
+
+    const installedMap = new Map(
+        state.installed.map(
+            (item) => [item.name, item]
+        )
+    );
+
+    if (currentTab === 'market') {
+
+        const plugins = state.market.plugins.filter(
+            (entry) =>
+                !search ||
+                entry.name.toLowerCase().includes(search) ||
+                (entry.description || '')
+                    .toLowerCase().includes(search) ||
+                (entry.tags || []).some(
+                    (tag) =>
+                        tag.toLowerCase().includes(search)
+                )
+        );
+
+        if (plugins.length === 0) {
+
+            listEl.innerHTML =
+                '<div class="empty">没有匹配的插件</div>';
+
+            return;
+        }
+
+        for (const entry of plugins) {
+
+            const installed = installedMap.get(entry.name);
+
+            listEl.appendChild(
+                renderMarketCard(entry, installed)
+            );
+        }
+
+        return;
+    }
+
+    const installed = state.installed.filter(
+        (item) =>
+            !search ||
+            item.name.toLowerCase().includes(search) ||
+            (item.description || '')
+                .toLowerCase().includes(search)
+    );
+
+    if (installed.length === 0) {
+
+        listEl.innerHTML =
+            '<div class="empty">还没有安装任何可管理插件</div>';
+
+        return;
+    }
+
+    for (const item of installed) {
+        listEl.appendChild(renderInstalledCard(item));
+    }
+}
+
+function renderMarketCard(entry, installed) {
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const tagsHtml = (entry.tags || []).map(
+        (tag) =>
+            '<span class="tag">' + esc(tag) + '</span>'
+    ).join('');
+
+    const authorHtml = entry.author
+        ? '<span>作者：' + esc(entry.author) + '</span>'
+        : '';
+
+    const homepageHtml = entry.homepage
+        ? '<a href="#" class="homepage-link" data-url="' +
+          esc(entry.homepage) + '">主页</a>'
+        : '';
+
+    const versionHtml = entry.latestVersion
+        ? '<span class="version">最新 ' +
+          esc(entry.latestVersion) + '</span>'
+        : '';
+
+    card.innerHTML =
+        '<div class="icon">🧩</div>' +
+        '<div class="body">' +
+            '<div class="title-row">' +
+                '<span class="title">' + esc(entry.name) +
+                '</span>' +
+                versionHtml +
+                (installed
+                    ? '<span class="state-chip on">已安装</span>'
+                    : '') +
+            '</div>' +
+            '<div class="desc">' +
+                esc(entry.description || '暂无描述') +
+            '</div>' +
+            '<div class="meta">' +
+                authorHtml + tagsHtml +
+            '</div>' +
+        '</div>' +
+        '<div class="actions">' +
+            buildMarketActions(entry, installed) +
+        '</div>';
+
+    const link = card.querySelector('.homepage-link');
+
+    if (link) {
+
+        link.addEventListener(
+            'click',
+            (event) => {
+                event.preventDefault();
+                bridge.openHomepage(link.dataset.url);
+            }
+        );
+    }
+
+    return card;
+}
+
+function buildMarketActions(entry, installed) {
+
+    if (entry.builtin) {
+
+        return '<button class="action plain" disabled>' +
+               '内置' +
+               '</button>';
+    }
+
+    if (installed) {
+
+        const updateable =
+            entry.latestVersion &&
+            installed.version &&
+            entry.latestVersion !== installed.version;
+
+        return (
+            '<button class="action plain" disabled>' +
+            '已安装 ✓' +
+            '</button>' +
+            (
+                updateable
+                    ? '<button class="action primary update-btn" data-name="' +
+                      esc(entry.name) + '">更新</button>'
+                    : ''
+            )
+        );
+    }
+
+    return '<button class="action primary install-btn" data-name="' +
+           esc(entry.name) + '">安装</button>';
+}
+
+function renderInstalledCard(item) {
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const enabledHtml = item.isBundle
+        ? (
+            item.enabled
+                ? '<span class="state-chip on">已启用</span>'
+                : '<span class="state-chip off">已禁用</span>'
+        )
+        : '<span class="state-chip off">纯依赖（无 bundle）</span>';
+
+    const actions = [];
+
+    if (item.isBundle) {
+
+        actions.push(
+            '<button class="action plain toggle-btn" data-name="' +
+            esc(item.name) + '" data-enabled="' +
+            (item.enabled ? '1' : '0') + '">' +
+            (item.enabled ? '禁用' : '启用') +
+            '</button>'
+        );
+    }
+
+    actions.push(
+        '<button class="action plain update-btn" data-name="' +
+        esc(item.name) + '">更新</button>'
+    );
+
+    actions.push(
+        '<button class="action warn uninstall-btn" data-name="' +
+        esc(item.name) + '">卸载</button>'
+    );
+
+    card.innerHTML =
+        '<div class="icon">📦</div>' +
+        '<div class="body">' +
+            '<div class="title-row">' +
+                '<span class="title">' + esc(item.name) +
+                '</span>' +
+                '<span class="version">v' +
+                esc(item.version) + '</span>' +
+                enabledHtml +
+            '</div>' +
+            '<div class="desc">' +
+                esc(item.description || '暂无描述') +
+            '</div>' +
+        '</div>' +
+        '<div class="actions">' +
+            actions.join('') +
+        '</div>';
+
+    return card;
+}
+
+/* ---------- 事件绑定 ---------- */
+
+function bindListEvents() {
+
+    const listEl = document.getElementById('list');
+
+    listEl.addEventListener(
+        'click',
+        async (event) => {
+
+            const button = event.target.closest('button');
+
+            if (!button) {
+                return;
+            }
+
+            if (busy) {
+                setStatus('有操作正在进行，请稍候…', busy);
+                return;
+            }
+
+            if (
+                button.classList.contains('install-btn')
+            ) {
+
+                const name = button.dataset.name;
+
+                await doAction(
+                    () => bridge.install(name),
+                    '安装 ' + name
+                );
+
+                return;
+            }
+
+            if (
+                button.classList.contains('uninstall-btn')
+            ) {
+
+                const name = button.dataset.name;
+
+                if (
+                    !confirm(
+                        '确定卸载 ' + name +
+                        ' 吗？\n卸载后相关功能将不可用。'
+                    )
+                ) {
+                    return;
+                }
+
+                await doAction(
+                    () => bridge.uninstall(name),
+                    '卸载 ' + name
+                );
+
+                return;
+            }
+
+            if (
+                button.classList.contains('update-btn')
+            ) {
+
+                const name = button.dataset.name;
+
+                await doAction(
+                    () => bridge.update(name),
+                    '更新 ' + name
+                );
+
+                return;
+            }
+
+            if (
+                button.classList.contains('toggle-btn')
+            ) {
+
+                const name = button.dataset.name;
+                const enabled = button.dataset.enabled !== '1';
+
+                await doAction(
+                    () => bridge.setEnabled(name, enabled),
+                    (enabled ? '启用 ' : '禁用 ') + name
+                );
+            }
+        }
+    );
+}
+
+async function doAction(run, label) {
+
+    setStatus('正在' + label + '…', true);
+
+    try {
+
+        const result = await run();
+
+        if (!result || !result.ok) {
+
+            setStatus(
+                label + ' 未完成：' +
+                ((result && result.error) || '未知错误')
+            );
+
+            return;
+        }
+
+        setStatus(label + ' 完成 ✓');
+
+        await loadState(false);
+
+    } catch (error) {
+
+        const message =
+            (error && error.message) ||
+            String(error);
+
+        setStatus(label + ' 失败：' + message);
+
+        alert(
+            label + ' 失败\n\n' + message +
+            '\n\n如因网络问题，请确认网络可用后重试。'
+        );
+    }
+}
+
+/* ---------- 数据加载 ---------- */
+
+async function loadState(showLoading) {
+
+    if (showLoading) {
+        setStatus('正在加载…', true);
+    }
+
+    try {
+
+        state = await bridge.getState();
+        updateSourceBadge();
+        render();
+
+        if (showLoading) {
+            setStatus('就绪', false);
+        }
+
+    } catch (error) {
+
+        setStatus(
+            '加载失败：' +
+            ((error && error.message) || String(error))
+        );
+    }
+}
+
+function updateSourceBadge() {
+
+    const badge = document.getElementById('sourceBadge');
+
+    if (!state) {
+        return;
+    }
+
+    if (state.meta.online) {
+
+        badge.textContent = '在线数据';
+        badge.className = 'badge ok';
+
+        return;
+    }
+
+    badge.textContent = '离线（内置/缓存）';
+    badge.className = 'badge off';
+}
+
+/* ---------- 初始化 ---------- */
+
+document.getElementById('tabMarket').addEventListener(
+    'click',
+    () => {
+        currentTab = 'market';
+        document.getElementById('tabMarket')
+            .classList.add('active');
+        document.getElementById('tabInstalled')
+            .classList.remove('active');
+        render();
+    }
+);
+
+document.getElementById('tabInstalled').addEventListener(
+    'click',
+    () => {
+        currentTab = 'installed';
+        document.getElementById('tabInstalled')
+            .classList.add('active');
+        document.getElementById('tabMarket')
+            .classList.remove('active');
+        render();
+    }
+);
+
+document.getElementById('search').addEventListener(
+    'input',
+    () => {
+        render();
+    }
+);
+
+document.getElementById('refreshBtn').addEventListener(
+    'click',
+    () => {
+        loadState(true);
+    }
+);
+
+if (bridge && bridge.onProgress) {
+
+    bridge.onProgress(
+        (data) => {
+            setStatus(data.text || '处理中…', true);
+        }
+    );
+}
+
+bindListEvents();
+loadState(true);
+</script>
+</body>
+</html>

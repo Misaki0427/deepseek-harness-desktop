@@ -32,8 +32,11 @@
     ],
     "files": [
       "main.js",
+      "market.js",
+      "market.html",
       "preload.js",
       "index.html",
+      "market/plugins.json",
       "theme-bg.png",
       "theme-emblem.png",
       "tray.png",

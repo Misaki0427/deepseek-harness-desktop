@@ -16,6 +16,8 @@ const fs = require('fs');
 const http = require('http');
 const os = require('os');
 
+const market = require('./market.js');
+
 
 /* =========================================================
  * 文件日志（黑匣子）
@@ -2223,6 +2225,14 @@ async function updateTray() {
             },
 
             {
+                label: '插件市场',
+
+                click: () => {
+                    market.openMarketWindow();
+                }
+            },
+
+            {
                 label: '检查更新',
 
                 click: () => {
@@ -3078,6 +3088,16 @@ if (!gotSingleInstanceLock) {
 
 
             await bootstrap();
+
+
+            /**
+             * 插件市场模块（IPC + 独立窗口）。
+             */
+            market.initMarketModule({
+                harnessDir: HARNESS_DIR,
+                restartHarness,
+                userDataDir: app.getPath('userData')
+            });
 
 
             /**
