@@ -16,6 +16,10 @@ github-package/
 # 本地配置备份（dsh 插件配置回滚用）
 .dsh-profile-backup/
 
+# OCR 语言包与测试图（体积大/第三方二进制，不进仓库）
+tools/tessdata/
+tools/ocr-test.png
+
 # 日志与临时文件
 *.log
 .DS_Store
