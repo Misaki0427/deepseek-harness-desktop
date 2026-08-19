@@ -2142,6 +2142,24 @@ async function updateTray() {
                         await restartHarness();
                         await openHarness();
 
+                        /**
+                         * 重启完成提示（托盘气泡）
+                         */
+                        if (tray) {
+
+                            try {
+
+                                tray.displayBalloon({
+                                    title: 'DeepSeek Harness',
+                                    content: '重启完成 ✓',
+                                    iconType: 'info'
+                                });
+
+                            } catch {
+                                // 气泡提示失败忽略
+                            }
+                        }
+
                     } catch (error) {
 
                         console.error(
