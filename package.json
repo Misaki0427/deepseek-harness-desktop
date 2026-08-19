@@ -33,6 +33,7 @@
     "files": [
       "main.js",
       "market.js",
+      "harness-update.js",
       "market.html",
       "preload.js",
       "index.html",
