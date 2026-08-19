@@ -970,6 +970,15 @@ async function fetchRemoteMarket() {
     }
 }
 
+/**
+ * 仅供测试：清除会话内市场缓存，让下一次 getMarketData 重新走回退链
+ */
+function resetMarketCacheForTest() {
+
+    cachedMarket = null;
+    marketOnline = false;
+}
+
 async function getMarketData() {
 
     if (cachedMarket) {
@@ -1283,6 +1292,7 @@ module.exports = {
         getInstalledPlugins,
         getMarketState,
         readProfileManifest,
-        setPluginEnabled
+        setPluginEnabled,
+        resetMarketCacheForTest
     }
 };

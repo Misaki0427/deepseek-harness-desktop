@@ -198,6 +198,55 @@ function check(label, actual, expected) {
         ['@deepseek-ai/dsh-base']
     );
 
+    console.log('== 8. 市场数据：在线失败回退本地缓存 ==');
+
+    // 写入有效缓存（沙箱内 jsdelivr/GitHub 不可达，在线必失败）
+    const userDataDir = path.join(tmpRoot, 'userData');
+    fs.mkdirSync(userDataDir, { recursive: true });
+    fs.writeFileSync(
+        path.join(userDataDir, 'market-cache.json'),
+        JSON.stringify({
+            version: 1,
+            plugins: [
+                { name: 'cached-plugin', description: '来自缓存' }
+            ]
+        }),
+        'utf8'
+    );
+
+    t.resetMarketCacheForTest();
+    const cachedState = await t.getMarketState();
+    check(
+        '使用缓存条目且标记离线',
+        [
+            cachedState.market.plugins.map((p) => p.name),
+            cachedState.meta.online
+        ],
+        [['cached-plugin'], false]
+    );
+
+    console.log('== 9. 市场数据：坏缓存回退内置 ==');
+
+    fs.writeFileSync(
+        path.join(userDataDir, 'market-cache.json'),
+        '{ 这不是合法 JSON',
+        'utf8'
+    );
+
+    t.resetMarketCacheForTest();
+    const builtinState = await t.getMarketState();
+    check(
+        '坏缓存被跳过，回退内置数据（2 条目）',
+        [
+            builtinState.market.plugins.length,
+            builtinState.market.plugins.map((p) => p.name)
+        ],
+        [2, [
+            'dsh-img',
+            '@dsh-external/dsh-client-ui-skin-maid-atelier'
+        ]]
+    );
+
     console.log('');
     if (failures === 0) {
         console.log('全部通过 ✓');
