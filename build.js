@@ -312,6 +312,21 @@ async function prepareHarnessRuntime() {
         );
     }
 
+    const npmPath = path.join(
+        buildHarnessDir,
+        "node_modules",
+        "npm",
+        "bin",
+        "npm-cli.js"
+    );
+
+    if (!fs.existsSync(npmPath)) {
+
+        throw new Error(
+            `精简 Runtime 缺少内置 npm：${npmPath}`
+        );
+    }
+
     const finalStats =
         await getDirectoryStats(
             buildHarnessDir
@@ -335,6 +350,10 @@ async function prepareHarnessRuntime() {
 
     console.log(
         "✅ 内置 pnpm 检查通过"
+    );
+
+    console.log(
+        "✅ 内置 npm 检查通过"
     );
 
     const skinPath = path.join(

@@ -12,6 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "@deepseek-ai/dsh": "0.1.0-rc.6",
+    "npm": "10.9.9",
     "pnpm": "11.22.0"
   }
 }

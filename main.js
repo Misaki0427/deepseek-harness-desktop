@@ -17,6 +17,7 @@ const http = require('http');
 const os = require('os');
 
 const market = require('./market.js');
+const harnessUpdate = require('./harness-update.js');
 
 
 /* =========================================================
@@ -2233,6 +2234,14 @@ async function updateTray() {
             },
 
             {
+                label: '检查 Harness 更新',
+
+                click: () => {
+                    harnessUpdate.checkForHarnessUpdate(true);
+                }
+            },
+
+            {
                 label: '检查更新',
 
                 click: () => {
@@ -3101,6 +3110,16 @@ if (!gotSingleInstanceLock) {
 
 
             /**
+             * Harness 更新模块（托盘检查 + 一键拉取更新）。
+             */
+            harnessUpdate.initHarnessUpdate({
+                harnessDir: HARNESS_DIR,
+                restartHarness,
+                getTray: () => tray
+            });
+
+
+            /**
              * 启动成功 10 秒后静默检查一次更新。
              */
             setTimeout(
@@ -3108,6 +3127,17 @@ if (!gotSingleInstanceLock) {
                     checkForUpdates(false);
                 },
                 10000
+            );
+
+
+            /**
+             * 启动 20 秒后静默检查 Harness 更新（有新版仅气泡提示）。
+             */
+            setTimeout(
+                () => {
+                    harnessUpdate.checkForHarnessUpdate(false);
+                },
+                20000
             );
 
 
