@@ -373,6 +373,17 @@ let isStarting = false;
 let isStopping = false;
 
 /**
+ * 正在被主动停止的 Manager 进程引用。
+ *
+ * stopHarness 等待端口释放后会立即复位 isStopping，
+ * 而 Manager 的 exit 事件可能晚于端口释放才到达
+ * （实测 09:08:01.988 复位 → 09:08:01.990 exit），
+ * 单靠 isStopping 会把主动停止误判为「非预期退出」
+ * 而触发自动恢复。用该标记在 exit 事件里精确识别。
+ */
+let stoppedChild = null;
+
+/**
  * Electron 是否正在退出
  */
 let isQuitting = false;
@@ -1040,6 +1051,16 @@ function startHarness() {
                         const wasStarting =
                             isStarting;
 
+                        /**
+                         * 是否正是刚被主动停止的那个进程。
+                         */
+                        const wasStoppedByUs =
+                            child === stoppedChild;
+
+                        if (wasStoppedByUs) {
+                            stoppedChild = null;
+                        }
+
                         if (
                             harnessProcess === child
                         ) {
@@ -1050,6 +1071,7 @@ function startHarness() {
 
                         if (
                             !wasStarting &&
+                            !wasStoppedByUs &&
                             !isStopping &&
                             !isQuitting
                         ) {
@@ -1063,6 +1085,13 @@ function startHarness() {
                             scheduleAutoRestart();
 
                         } else {
+
+                            if (wasStoppedByUs) {
+
+                                console.log(
+                                    '[HARNESS] 主动停止的进程已退出（不触发自动恢复）'
+                                );
+                            }
 
                             updateTray();
                         }
@@ -1235,6 +1264,13 @@ function stopHarness() {
 
                 const pid =
                     child.pid;
+
+
+                /**
+                 * 标记：这是被主动停止的进程。
+                 * exit 事件晚到时据此跳过自动恢复。
+                 */
+                stoppedChild = child;
 
 
                 /**
