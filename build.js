@@ -297,6 +297,21 @@ async function prepareHarnessRuntime() {
         );
     }
 
+    const pnpmPath = path.join(
+        buildHarnessDir,
+        "node_modules",
+        "pnpm",
+        "bin",
+        "pnpm.cjs"
+    );
+
+    if (!fs.existsSync(pnpmPath)) {
+
+        throw new Error(
+            `精简 Runtime 缺少内置 pnpm：${pnpmPath}`
+        );
+    }
+
     const finalStats =
         await getDirectoryStats(
             buildHarnessDir
@@ -316,6 +331,10 @@ async function prepareHarnessRuntime() {
 
     console.log(
         "✅ watchdog.js 检查通过"
+    );
+
+    console.log(
+        "✅ 内置 pnpm 检查通过"
     );
 
     const skinPath = path.join(
