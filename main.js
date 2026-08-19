@@ -2224,7 +2224,18 @@ async function updateTray() {
         ]);
 
 
-    tray.setContextMenu(
+    /**
+     * 防竞态：await checkHarness() 期间应用可能已开始退出、
+     * tray 已被销毁，直接调用会抛
+     * "Cannot read properties of null (reading 'setContextMenu')"。
+     */
+    const currentTray = tray;
+
+    if (!currentTray) {
+        return;
+    }
+
+    currentTray.setContextMenu(
         contextMenu
     );
 }
@@ -3052,8 +3063,12 @@ if (!gotSingleInstanceLock) {
         } catch (error) {
 
             console.error(
-                '[APP] Bootstrap 失败：',
-                error
+                '[APP] Bootstrap 失败：' +
+                (error && error.message ? error.message : String(error))
+            );
+
+            console.error(
+                (error && error.stack ? error.stack : '')
             );
 
 
